@@ -1,26 +1,13 @@
 import streamlit as st
 import nltk
-import os
 import re
 import heapq
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 
-# 🔧 Ensure nltk data path works on Streamlit Cloud
-nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
-os.makedirs(nltk_data_path, exist_ok=True)
-nltk.data.path.append(nltk_data_path)
-
-# 🔽 Download required NLTK data if not present
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', download_dir=nltk_data_path)
-
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', download_dir=nltk_data_path)
+# ✅ Download punkt and stopwords to default NLTK data path
+nltk.download("punkt")
+nltk.download("stopwords")
 
 # 🧠 Streamlit UI
 st.title("📝 Text Summarizer App")
