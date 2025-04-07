@@ -1,17 +1,17 @@
 import streamlit as st
 import nltk
 import os
-import heapq
 import re
+import heapq
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 
-
-# 🔽 NLTK setup for Streamlit Cloud
+# 🔧 Ensure nltk data path works on Streamlit Cloud
 nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
 os.makedirs(nltk_data_path, exist_ok=True)
 nltk.data.path.append(nltk_data_path)
 
+# 🔽 Download required NLTK data if not present
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -22,54 +22,40 @@ try:
 except LookupError:
     nltk.download('stopwords', download_dir=nltk_data_path)
 
-# Download resources once
-nltk.download('punkt')
-nltk.download('stopwords')
+# 🧠 Streamlit UI
+st.title("📝 Text Summarizer App")
 
-# Streamlit UI
-st.set_page_config(page_title="Text Summarizer", layout="centered")
-st.title("🧠 AI Text Summarizer")
-st.write("Paste any long text below, and get a short summary using basic NLP.")
+text = st.text_area("Enter your text below:")
 
-# Text input area
-user_text = st.text_area("📜 Enter your text here:", height=250)
-
-# Summary length slider
-summary_length = st.slider("How many sentences should the summary have?", 1, 5, 3)
-
-if st.button("✨ Summarize"):
-    if not user_text.strip():
-        st.warning("Please enter some text first.")
+if st.button("Summarize"):
+    if text.strip() == "":
+        st.warning("Please enter some text to summarize.")
     else:
-        # Step 1: Clean text
-        text = re.sub(r'\s+', ' ', user_text)
+        # 1. Tokenize into sentences
         sentences = sent_tokenize(text)
 
-        # Step 2: Word frequency table
+        # 2. Clean text
         stop_words = set(stopwords.words("english"))
         word_frequencies = {}
-
         for word in word_tokenize(text.lower()):
-            if word.isalpha() and word not in stop_words:
-                if word not in word_frequencies:
-                    word_frequencies[word] = 1
-                else:
-                    word_frequencies[word] += 1
+            if word.isalnum() and word not in stop_words:
+                word_frequencies[word] = word_frequencies.get(word, 0) + 1
 
-        # Step 3: Sentence scores
+        # 3. Normalize frequencies
+        max_freq = max(word_frequencies.values())
+        for word in word_frequencies:
+            word_frequencies[word] /= max_freq
+
+        # 4. Score sentences
         sentence_scores = {}
         for sent in sentences:
             for word in word_tokenize(sent.lower()):
                 if word in word_frequencies:
-                    if len(sent.split(' ')) < 30:
-                        if sent not in sentence_scores:
-                            sentence_scores[sent] = word_frequencies[word]
-                        else:
-                            sentence_scores[sent] += word_frequencies[word]
+                    sentence_scores[sent] = sentence_scores.get(sent, 0) + word_frequencies[word]
 
-        # Step 4: Summary
-        summary_sentences = heapq.nlargest(summary_length, sentence_scores, key=sentence_scores.get)
-        summary = ' '.join(summary_sentences)
+        # 5. Pick top 3 sentences
+        summary_sentences = heapq.nlargest(3, sentence_scores, key=sentence_scores.get)
+        summary = " ".join(summary_sentences)
 
-        st.subheader("✅ Summary:")
+        st.subheader("Summary:")
         st.success(summary)
