@@ -1,27 +1,30 @@
 import nltk
-
-# 🔐 Force download BEFORE anything else
-nltk.download("punkt")
-nltk.download("stopwords")
-
+import os
 import streamlit as st
-import re
 import heapq
+import re
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 
-st.title("📝 Text Summarizer (Streamlit + NLTK)")
+# 🚨 Force download + suppress re-download if already present
+nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
+if not os.path.exists(nltk_data_dir):
+    os.mkdir(nltk_data_dir)
 
-text = st.text_area("Paste your text here:")
+nltk.data.path.append(nltk_data_dir)
+nltk.download('punkt', download_dir=nltk_data_dir)
+nltk.download('stopwords', download_dir=nltk_data_dir)
+
+# Streamlit app
+st.title("🧠 Text Summarizer")
+
+text = st.text_area("Paste the text you want to summarize:")
 
 if st.button("Summarize"):
     if not text.strip():
-        st.warning("Please enter some text!")
+        st.warning("Please enter some text to summarize.")
     else:
-        # Step 1: Sentence Tokenization
         sentences = sent_tokenize(text)
-
-        # Step 2: Word Frequency Table
         stop_words = set(stopwords.words("english"))
         word_frequencies = {}
 
@@ -29,21 +32,18 @@ if st.button("Summarize"):
             if word.isalnum() and word not in stop_words:
                 word_frequencies[word] = word_frequencies.get(word, 0) + 1
 
-        # Step 3: Normalize frequencies
         max_freq = max(word_frequencies.values(), default=1)
         for word in word_frequencies:
             word_frequencies[word] /= max_freq
 
-        # Step 4: Score sentences
         sentence_scores = {}
         for sent in sentences:
             for word in word_tokenize(sent.lower()):
                 if word in word_frequencies:
                     sentence_scores[sent] = sentence_scores.get(sent, 0) + word_frequencies[word]
 
-        # Step 5: Get Top 3 Sentences
         summary_sentences = heapq.nlargest(3, sentence_scores, key=sentence_scores.get)
         summary = " ".join(summary_sentences)
 
-        st.subheader("Summary:")
+        st.subheader("✂️ Summary:")
         st.success(summary)
